@@ -1,0 +1,211 @@
+#Написание скрипта на Python для извлечения данных из базы данных:
+import psycopg2
+
+conn = psycopg2.connect(database="mydatabase", user="myuser", password="mypassword", host="localhost", port="5432")
+cur = conn.cursor()
+
+cur.execute("SELECT * FROM mytable")
+rows = cur.fetchall()
+
+# Сохранение извлеченных данных в файле
+with open('data.csv', 'w') as f:
+    for row in rows:
+        f.write(','.join(str(x) for x in row) + '\n')
+
+cur.close()
+conn.close()
+
+
+Создание скрипта для очистки данных. Например, можно удалить дубликаты и пропущенные значения:
+
+import pandas as pd
+
+data = pd.read_csv('data.csv')
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+
+data.to_csv('cleaned_data.csv', index=False)
+
+
+Создание скрипта для агрегации данных:( это процесс суммирования, подсчета средних значений,
+максимумов или минимумов по группе данных. Это может включать в себя группировку данных по различным категориям,
+таким как дата, местоположение, категория товаров и т.д. Затем, к этим группам применяются
+функции агрегации для получения итоговых результатов.)
+
+import pandas as pd
+
+data = pd.read_csv('cleaned_data.csv')
+agg_data = data.groupby(['category']).agg({'value': 'sum'})
+
+agg_data.to_csv('aggregated_data.csv', index=True)
+
+
+
+
+Настройка DAG (Directed Acyclic Graph) в Airflow для запуска скриптов:
+
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 3, 1),
+    'email': ['airflow@example.com'],
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG('my_dag', default_args=default_args, schedule_interval=timedelta(days=1))
+
+t1 = PythonOperator(
+    task_id='extract_data',
+    python_callable=extract_data,
+    dag=dag,
+)
+
+t2 = PythonOperator(
+    task_id='clean_data',
+    python_callable=clean_data,
+    dag=dag,
+)
+
+t3 = PythonOperator(
+    task_id='aggregate_data',
+    python_callable=aggregate_data,
+    dag=dag,
+)
+
+t1 >> t2 >> t3
+
+
+
+Загрузка данных в хранилище данных, например, в СУБД PostgreSQL:
+
+import psycopg2
+
+conn = psycopg2.connect(database="mydatabase", user="myuser", password="mypassword", host="localhost", port="5432")
+cur = conn.cursor()
+
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS aggregated_data (
+        category VARCHAR(50),
+        value FLOAT
+    );
+""")
+
+with open('aggregated_data.csv', 'r') as f:
+    next(f)  # пропуск заголовка
+    cur.copy_from(f, 'aggregated_data', sep=',')
+
+conn.commit()
+
+cur.close()
+conn.close()
+
+Решение данной задачи с использованием Python и Airflow может выглядеть следующим образом:
+
+Написание скрипта на Python для извлечения данных из базы данных:
+python
+Copy code
+import psycopg2
+
+conn = psycopg2.connect(database="mydatabase", user="myuser", password="mypassword", host="localhost", port="5432")
+cur = conn.cursor()
+
+cur.execute("SELECT * FROM mytable")
+rows = cur.fetchall()
+
+# Сохранение извлеченных данных в файле
+with open('data.csv', 'w') as f:
+    for row in rows:
+        f.write(','.join(str(x) for x in row) + '\n')
+
+cur.close()
+conn.close()
+Создание скрипта для очистки данных. Например, можно удалить дубликаты и пропущенные значения:
+python
+Copy code
+import pandas as pd
+
+data = pd.read_csv('data.csv')
+data.drop_duplicates(inplace=True)
+data.dropna(inplace=True)
+
+data.to_csv('cleaned_data.csv', index=False)
+Создание скрипта для агрегации данных:
+python
+Copy code
+import pandas as pd
+
+data = pd.read_csv('cleaned_data.csv')
+agg_data = data.groupby(['category']).agg({'value': 'sum'})
+
+agg_data.to_csv('aggregated_data.csv', index=True)
+Настройка DAG (Directed Acyclic Graph) в Airflow для запуска скриптов:
+python
+Copy code
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2023, 3, 1),
+    'email': ['airflow@example.com'],
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG('my_dag', default_args=default_args, schedule_interval=timedelta(days=1))
+
+t1 = PythonOperator(
+    task_id='extract_data',
+    python_callable=extract_data,
+    dag=dag,
+)
+
+t2 = PythonOperator(
+    task_id='clean_data',
+    python_callable=clean_data,
+    dag=dag,
+)
+
+t3 = PythonOperator(
+    task_id='aggregate_data',
+    python_callable=aggregate_data,
+    dag=dag,
+)
+
+t1 >> t2 >> t3
+Загрузка данных в хранилище данных, например, в СУБД PostgreSQL:
+python
+Copy code
+import psycopg2
+
+conn = psycopg2.connect(database="mydatabase", user="myuser", password="mypassword", host="localhost", port="5432")
+cur = conn.cursor()
+
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS aggregated_data (
+        category VARCHAR(50),
+        value FLOAT
+    );
+""")
+
+with open('aggregated_data.csv', 'r') as f:
+    next(f)  # пропуск заголовка
+    cur.copy_from(f, 'aggregated_data', sep=',')
+
+conn.commit()
+
+cur.close()
+conn.close()
+Эти скрипты можно запускать с помощью Airflow, создав соответствующий DAG. 
+DAG будет запускаться каждый день и выполнять последовательность операций: извлечение данных из базы данных, их оч
